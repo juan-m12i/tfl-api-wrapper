@@ -6,7 +6,7 @@ import json
 import base64
 import logging
 from collections import namedtuple
-from helper_functions import merge_two_dicts
+from helper_functions import merge_two_dicts, log_bulk, debug_bulk
 
 if (sys.version_info > (3, 0)):
     # Python 3
@@ -17,6 +17,9 @@ else:
     from urlparse import urljoin
     from urllib import urlencode
     from urllib2 import Request, urlopen, HTTPError
+
+from constants import DEBUG_DATA_LEVEL, STOP_TYPES
+
 
 
 Response = namedtuple('Response', ['code', 'data'])
@@ -38,17 +41,18 @@ class Client(object):
         :param payload: The parameters in a dictionary.
         :param auth: A tuple containing username and password.
         """
+        debug_bulk(url, payload, auth)
+
         if payload is None:
             payload = {}
 
         if auth is not None:
             payload = merge_two_dicts(payload, auth)
         full_url = '{}?{}'.format(url, urlencode(payload))
-        request = Request(full_url)
-        if auth is not None:
-            base64_auth = base64.b64encode('{}{}'.format(auth[0], auth[1]))
-            request.add_header("Authorization", "Basic {}".format(base64_auth))
 
+        debug_bulk(payload, full_url)
+
+        request = Request(full_url)
 
         try:
             response = urlopen(request)
@@ -72,12 +76,14 @@ class TfLAPI(object):
         Defaults to https://api.tfl.gov.uk/
         """
         logging.info("TfLAPI instance being created")
+        debug_bulk(app_id, app_key, url)
+
 
         if app_id is None or app_key is None:
             self._app_id = None
             self._app_key = None
-            print("using anonymous")  # Replace by logging
-            
+            logging.info("Anoymous use of API, please initialise API with an app_id and app_key")  # Replace by logging
+
         else:
             self._app_id = app_id
             self._app_key = app_key
@@ -94,24 +100,25 @@ class TfLAPI(object):
     def _make_request(self, method, endpoint, parameters=None):
         """
         """
+        debug_bulk(method, endpoint, parameters)
+
         method = getattr(self._client, method.lower())
         url = urljoin(self._url, endpoint)
-        print(url)
         if parameters is None:
             parameters = {}
         parameters = merge_two_dicts(parameters, self.get_credentials())
-        print(parameters)
 
         return self._client.get(url, parameters, None)
 
     def _serialize(self, data):
-        print(data)
+        logging.log(DEBUG_DATA_LEVEL, data)
         return self._serializer.loads(data)
 
     def _wrap(self, endpoint, parameters=None, method='get'):
         """Internal method used to make the request and wrap the response.
         """
         status, data = self._make_request(method, endpoint, parameters)
+        logging.debug(status)
         return Response(status, self._serialize(data))
 
     def raw(self, method, endpoint, parameters=None):
@@ -134,6 +141,27 @@ class TfLAPI(object):
         return (self._key, ':')
     
     def get_bus_arrivals(self, Line, StopPoint):
-        endpoint = 'Line/{}/Arrivals?stopPointId={}'.format(Line, StopPoint)
-        return self._wrap(endpoint)
+        debug_bulk(Line, StopPoint)
+
+        endpoint = 'Line/{}/Arrivals'.format(Line, StopPoint)
+        parameters = {"stopPointID" : StopPoint}
+        return self._wrap(endpoint, parameters)
+
+    def get_stop_points_by_location(self, lat, lon, stopTypes = STOP_TYPES, radius = None):
+        """Given a location (lat, lon) will return a the stop points near a radius (200mts default)
+        Still to add other parameters """
+        debug_bulk(lat, lon, stopTypes, radius)
+
+        endpoint = 'StopPoint'
+        parameters = {
+            "lat" : lat,
+            "lon" : lon,
+            "stopTypes" : ",".join(stopTypes),
+        }
+
+        if radius is not None:
+            parameters["radius"] = radius
+
+        return self._wrap(endpoint, parameters)
+
 
