@@ -4,7 +4,9 @@ import os
 import sys
 import json
 import base64
+import logging
 from collections import namedtuple
+from helper_functions import merge_two_dicts
 
 if (sys.version_info > (3, 0)):
     # Python 3
@@ -39,11 +41,15 @@ class Client(object):
         if payload is None:
             payload = {}
 
+        if auth is not None:
+            payload = merge_two_dicts(payload, auth)
         full_url = '{}?{}'.format(url, urlencode(payload))
         request = Request(full_url)
         if auth is not None:
             base64_auth = base64.b64encode('{}{}'.format(auth[0], auth[1]))
             request.add_header("Authorization", "Basic {}".format(base64_auth))
+
+
         try:
             response = urlopen(request)
         except HTTPError as e:
@@ -57,24 +63,27 @@ class TfLAPI(object):
     You can find detailed documentation about the API here:
     https://api.tfl.gov.uk/
     """
-    def __init__(self, key=None,
+    def __init__(self, app_id = None, app_key = None,
                  url='https://api.tfl.gov.uk/', **kwargs):
         """
-        :param key: The API key
+        :param app_id: Application ID
+        :param app_key: Application key
         :param url. The API base url
         Defaults to https://api.tfl.gov.uk/
         """
-        if key is not None:
-            self._key = key
+
+        if app_id is None or app_key is None:
+            self._app_id = None
+            self._app_key = None
+            print("using anonymous")  # Replace by logging
         else:
-            api_env_var = kwargs.get(
-                'key_environment_var', 'TFL_API_KEY')
-            self._key = os.getenv(api_env_var)
-            if self._key is None:
-                raise ValueError(
-                    "No API key specified. "
-                    "Pass it as first parameter of constructor or "
-                    "define it in environment variable TFL_API_KEY")
+            self._app_id = app_id
+            self._app_key = app_key
+
+        self._credentials = {
+            "app_id": app_id,
+            "app_key": app_key,
+        }
 
         self._url = url
         self._serializer = kwargs.get('serializer', json)
@@ -85,8 +94,11 @@ class TfLAPI(object):
         """
         method = getattr(self._client, method.lower())
         url = urljoin(self._url, endpoint)
-        return self._client.get(
-            url, parameters, auth=self.get_authentication())
+        print(url)
+        parameters = merge_two_dicts(parameters, self.get_credentials())
+        print(parameters)
+
+        return self._client.get(url, parameters, None)
 
     def _serialize(self, data):
         return self._serializer.loads(data)
@@ -105,12 +117,18 @@ class TfLAPI(object):
         """
         return self._wrap(endpoint, parameters)
 
+    def get_credentials(self):
+        """
+        """
+        return (self._credentials)
+
+
     def get_authentication(self):
         """
         """
         return (self._key, ':')
     
     def get_bus_arrivals(self, Line, StopPoint):
-		endpoint = 'Line/{}/Arrivals?stopPointId={}'.format(Line, StopPoint)
+        endpoint = 'Line/{}/Arrivals?stopPointId={}'.format(Line, StopPoint)
         return self._wrap(endpoint)
-    
+
