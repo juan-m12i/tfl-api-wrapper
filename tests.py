@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from tfl-api import TfLAPI, Client, Response
+from tfl_api import TfLAPI, Client, Response
 from cfg import config
 
 
@@ -21,19 +21,23 @@ class TestResponse(unittest.TestCase):
 
 
 class TestTfLAPI(unittest.TestCase):
-    def __init__():
+    def __init__(self, *args, **kwargs):
+        super(TestTfLAPI, self).__init__(*args, **kwargs)
         self.credentials = config.get_credentials()
-        self.TfL_no_cred = TflAPI()
-        self.TfL = TfLAPI(credentials["app_id"], credentials["app_key"])
+        self.TfL_no_cred = TfLAPI()
+        self.TfL = TfLAPI(self.credentials["app_id"], self.credentials["app_key"])
 
-    def test_no_key_raises_error(self):
-        self.assertRaises(ValueError, TfLAPI)
+    def test_get_line_arrivals(self):
+        ret = self.TfL.get_line_arrivals("c2", "490003380N")
+        self.assertEqual(ret.code, 200)
 
-    def test_key_on_env_var(self):
-        os.environ['COMPANY_HOUSE_API_KEY'] = 'test'
-        api = CompanyHouseAPI()
-        self.assertEqual(api._key, 'test')
+    def test_get_arrivals(self):
+        ret = self.TfL.get_arrivals("490003380N")
+        self.assertEqual(ret.code, 200)
 
+    def test_stop_points_by_location(self):
+        ret = self.TfL.get_stop_points_by_location(51.5, -0.12)
+        self.assertEqual(ret.code, 200)
 
 
 if __name__ == '__main__':

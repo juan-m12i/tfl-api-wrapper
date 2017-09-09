@@ -140,12 +140,16 @@ class TfLAPI(object):
         """
         return (self._key, ':')
     
-    def get_bus_arrivals(self, Line, StopPoint):
+    def get_line_arrivals(self, Line, StopPoint):
         debug_bulk(Line, StopPoint)
 
-        endpoint = 'Line/{}/Arrivals'.format(Line, StopPoint)
+        endpoint = 'Line/{}/Arrivals'.format(Line)
         parameters = {"stopPointID" : StopPoint}
         return self._wrap(endpoint, parameters)
+
+    def get_arrivals(self, StopPoint):
+        endpoint = 'StopPoint/{}/Arrivals'.format(StopPoint)
+        return self._wrap(endpoint)
 
     def get_stop_points_by_location(self, lat, lon, stopTypes = STOP_TYPES, radius = None):
         """Given a location (lat, lon) will return a the stop points near a radius (200mts default)

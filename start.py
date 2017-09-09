@@ -24,6 +24,7 @@ logging.basicConfig(
 
 credentials = config.get_credentials()
 TfL = TfLAPI(credentials["app_id"], credentials["app_key"])
-arrivals = TfL.get_bus_arrivals("c2", "490003380N")
+arrivals = TfL.get_line_arrivals("c2", "490003380N")
+arrivals2 = TfL.get_arrivals("490003380N")
 stopPoints = TfL.get_stop_points_by_location(51.5, -0.12)
 
