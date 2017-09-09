@@ -71,11 +71,13 @@ class TfLAPI(object):
         :param url. The API base url
         Defaults to https://api.tfl.gov.uk/
         """
+        logging.info("TfLAPI instance being created")
 
         if app_id is None or app_key is None:
             self._app_id = None
             self._app_key = None
             print("using anonymous")  # Replace by logging
+            
         else:
             self._app_id = app_id
             self._app_key = app_key
@@ -95,12 +97,15 @@ class TfLAPI(object):
         method = getattr(self._client, method.lower())
         url = urljoin(self._url, endpoint)
         print(url)
+        if parameters is None:
+            parameters = {}
         parameters = merge_two_dicts(parameters, self.get_credentials())
         print(parameters)
 
         return self._client.get(url, parameters, None)
 
     def _serialize(self, data):
+        print(data)
         return self._serializer.loads(data)
 
     def _wrap(self, endpoint, parameters=None, method='get'):
