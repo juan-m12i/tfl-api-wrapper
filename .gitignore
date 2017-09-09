@@ -1,5 +1,6 @@
 # custom
 *.cfg
+*.log     # In Django as well
 
 # Generic Python Github
 # Byte-compiled / optimized / DLL files
