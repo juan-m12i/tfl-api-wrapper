@@ -110,3 +110,7 @@ class TfLAPI(object):
         """
         return (self._key, ':')
     
+    def get_bus_arrivals(self, Line, StopPoint):
+		endpoint = 'Line/{}/Arrivals?stopPointId={}'.format(Line, StopPoint)
+        return self._wrap(endpoint)
+    
